@@ -4,7 +4,7 @@ deviceQuery Starting...
 
 Detected 2 CUDA Capable device(s)
 
-Device 0: "NVIDIA H100 NVL"
+Device 0: "NVIDIA H100 NVL (Launchpad)"
   CUDA Driver Version / Runtime Version          12.4 / 12.6
   CUDA Capability Major/Minor version number:    9.0
   Total amount of global memory:                 95235 MBytes (99861463040 bytes)

@@ -4,7 +4,7 @@ deviceQuery Starting...
 
 Detected 1 CUDA Capable device(s)
 
-Device 0: "NVIDIA A100 80GB PCIe"
+Device 0: "NVIDIA A100 80GB PCIe (JPTNI)"
   CUDA Driver Version / Runtime Version          12.2 / 12.4
   CUDA Capability Major/Minor version number:    8.0
   Total amount of global memory:                 81051 MBytes (84987740160 bytes)

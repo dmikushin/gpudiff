@@ -5,6 +5,7 @@
 import argparse
 import json
 import re
+from collections import OrderedDict
 
 def extract_device_info(log):
     device_pattern = r'\s*Device 0: "(.+)"'
@@ -13,7 +14,7 @@ def extract_device_info(log):
 
     lines = log.splitlines()
 
-    info = {}
+    info = OrderedDict()
 
     device_pattern_found = False
     for line in lines:
@@ -35,17 +36,7 @@ def extract_device_info(log):
                     info['Total number of CUDA multiprocessors'] = num_smx
                     info['Total number of CUDA cores per multiprocessor'] = num_cores_per_smx
                     continue
-                if name == 'Run time limit on kernels':
-                    # The runtime limit on kernels is a OS-specific property
-                    # unrelated to the GPU itself, so we should skip it.
-                    continue
-                if name == 'CUDA Driver Version / Runtime Version':
-                    # The driver/runtime version is a machine-specific property
-                    # unrelated to the GPU itself, so we should skip it.
-                    continue
-                if name == 'Device PCI Domain ID / Bus ID / location ID':
-                    # The hardware address is a machine-specific property
-                    # unrelated to the GPU itself, so we should skip it.
+                if name in ['Run time limit on kernels', 'CUDA Driver Version / Runtime Version', 'Device PCI Domain ID / Bus ID / location ID']:
                     continue
                 info[name] = value
             else:
@@ -61,16 +52,14 @@ if __name__ == "__main__":
     parser.add_argument('filename', type=str, help='The path to the log file')
     args = parser.parse_args()
 
-    # Open the log file and read the entire log into a string
     with open(args.filename, 'r') as file:
         log = file.read()
 
     result = parse_device_query(log)
 
-    # Convert dictionary to JSON string
     json_string = json.dumps(result, indent=4)
     print(json_string)
 
-    # Write JSON string to a file
     with open(f'{args.filename}.json', 'w') as file:
         file.write(json_string)
+

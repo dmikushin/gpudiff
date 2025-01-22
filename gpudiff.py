@@ -4,12 +4,29 @@ import argparse
 from device_query import parse_device_query
 from bandwidth_test import parse_bandwidth_test
 from dashtable import data2rst
+from collections import OrderedDict
 
-def merge(dict1, dict2):
-    """Merge values of two dictionaries into tuples with the same key, using 'N/A' for missing keys."""
-    merged = {}
-    for key in set(dict1) | set(dict2):
+def merge(dict1: OrderedDict, dict2: OrderedDict):
+    """Merge values of two OrderedDicts into tuples with the same key, using 'N/A' for missing keys."""
+    merged = OrderedDict()
+    keys1 = list(dict1.keys())
+    keys2 = list(dict2.keys())
+    all_keys = []
+
+    # Interleave keys from both dicts
+    i, j = 0, 0
+    while i < len(keys1) or j < len(keys2):
+        if i < len(keys1) and keys1[i] not in all_keys:
+            all_keys.append(keys1[i])
+        if j < len(keys2) and keys2[j] not in all_keys:
+            all_keys.append(keys2[j])
+        i += 1
+        j += 1
+
+    # Merge dicts based on interleaved keys
+    for key in all_keys:
         merged[key] = (dict1.get(key, 'N/A'), dict2.get(key, 'N/A'))
+
     return merged
 
 def find_neighbors(lines, i, j):
@@ -87,7 +104,7 @@ def gpudiff(gpu1, gpu2):
     
     # Create a table with spans, if value is the same
     table = [
-        ["Key", device_name1, device_name2]
+        ["Property", device_name1, device_name2]
     ]
     spans = []
     
@@ -98,6 +115,7 @@ def gpudiff(gpu1, gpu2):
         return line.replace(chr(255), '+').replace(chr(254), '-').replace(chr(253), '=').replace(chr(252), '|')        
     
     for i, (key, (value1, value2)) in enumerate(diff.items()):
+        key = mask(key)
         value1 = mask(value1)
         value2 = mask(value2)
         if value1 == value2:
