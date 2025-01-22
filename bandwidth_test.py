@@ -72,6 +72,13 @@ def extract_d2d_bandwidth(log):
     pattern3 = r"\s*Transfer Size \(Bytes\)\tBandwidth\(GB/s\)"
     return extract_bandwidth(log, pattern1, pattern2, pattern3)
 
+def parse_bandwidth_test(log):
+    result = {}
+    result['device_name'] = extract_device_name(log)
+    result['h2d'] = extract_h2d_bandwidth(log)
+    result['d2h'] = extract_d2h_bandwidth(log)
+    result['d2d'] = extract_d2d_bandwidth(log)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Parse "bandwidthTest --mode=shmoo" CUDA sample output.')
     parser.add_argument('filename', type=str, help='The path to the log file')
@@ -81,13 +88,7 @@ if __name__ == "__main__":
     with open(args.filename, 'r') as file:
         log = file.read()
 
-    result = {}
-
-    result['device_name'] = extract_device_name(log)
-
-    result['h2d'] = extract_h2d_bandwidth(log)
-    result['d2h'] = extract_d2h_bandwidth(log)
-    result['d2d'] = extract_d2d_bandwidth(log)
+    result = parse_bandwidth_test(log)
 
     # Convert dictionary to JSON string
     json_string = json.dumps(result, indent=4)

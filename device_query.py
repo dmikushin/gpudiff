@@ -28,12 +28,16 @@ def extract_device_info(log):
                 value = match.group(2)
                 match = re.search(smx_pattern, line)
                 if match:
-                    num_smx = match.group(1)
-                    num_cores_per_smx = match.group(2)
-                    num_cores = 	match.group(3)
+                    num_smx = str(int(match.group(1)))
+                    num_cores_per_smx = str(int(match.group(2)))
+                    num_cores = str(int(match.group(3)))
                     info['Total number of CUDA codes'] = num_cores
                     info['Total number of CUDA multiprocessors'] = num_smx
                     info['Total number of CUDA cores per multiprocessor'] = num_cores_per_smx
+                    continue
+                if name == 'Run time limit on kernels':
+                    # The runtime limit on kernels is a OS-specific property
+                    # unrelated to the GPU itself, so we should skip it.
                     continue
                 if name == 'CUDA Driver Version / Runtime Version':
                     # The driver/runtime version is a machine-specific property
@@ -49,6 +53,9 @@ def extract_device_info(log):
                 
     return info
 
+def parse_device_query(log):
+    return extract_device_info(log)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Parse "deviceQuery" CUDA sample output.')
     parser.add_argument('filename', type=str, help='The path to the log file')
@@ -58,7 +65,7 @@ if __name__ == "__main__":
     with open(args.filename, 'r') as file:
         log = file.read()
 
-    result = extract_device_info(log)
+    result = parse_device_query(log)
 
     # Convert dictionary to JSON string
     json_string = json.dumps(result, indent=4)
