@@ -7,8 +7,9 @@ import json
 import re
 
 def extract_device_info(log):
-    device_pattern = r'\s*Device 0: "(.*)"'
-    info_pattern = r'\s*(.*?)\s*:?\s\s+(.*)'
+    device_pattern = r'\s*Device 0: "(.+)"'
+    info_pattern = r'\s*(.+?)\s*[:\s]\s+(.+)'
+    smx_pattern = r'\s*\((\d+)\) Multiprocessors, \((\d+)\) CUDA Cores/MP:\s*(\d+) CUDA Cores'
 
     lines = log.splitlines()
 
@@ -18,13 +19,26 @@ def extract_device_info(log):
     for line in lines:
         match = re.search(device_pattern, line)
         if match:
-            info['device_name'] = match.group(1)
+            info['Device Name'] = match.group(1)
             device_pattern_found = True
         elif device_pattern_found:
             match = re.search(info_pattern, line)
             if match:
                 name = match.group(1)
                 value = match.group(2)
+                match = re.search(smx_pattern, line)
+                if match:
+                    num_smx = match.group(1)
+                    num_cores_per_smx = match.group(2)
+                    num_cores = 	match.group(3)
+                    info['Total number of CUDA codes'] = num_cores
+                    info['Total number of CUDA multiprocessors'] = num_smx
+                    info['Total number of CUDA cores per multiprocessor'] = num_cores_per_smx
+                    continue
+                if name == 'CUDA Driver Version / Runtime Version':
+                    # The driver/runtime version is a machine-specific property
+                    # unrelated to the GPU itself, so we should skip it.
+                    continue
                 if name == 'Device PCI Domain ID / Bus ID / location ID':
                     # The hardware address is a machine-specific property
                     # unrelated to the GPU itself, so we should skip it.
