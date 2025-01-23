@@ -78,6 +78,7 @@ def parse_bandwidth_test(log):
     result['h2d'] = extract_h2d_bandwidth(log)
     result['d2h'] = extract_d2h_bandwidth(log)
     result['d2d'] = extract_d2d_bandwidth(log)
+    return result
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Parse "bandwidthTest --mode=shmoo" CUDA sample output.')

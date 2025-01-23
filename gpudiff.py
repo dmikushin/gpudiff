@@ -5,6 +5,7 @@ from device_query import parse_device_query
 from bandwidth_test import parse_bandwidth_test
 from dashtable import data2rst
 from collections import OrderedDict
+import matplotlib.pyplot as plt
 
 def merge(dict1: OrderedDict, dict2: OrderedDict):
     """Merge values of two OrderedDicts into tuples with the same key, using 'N/A' for missing keys."""
@@ -52,7 +53,7 @@ def convert_to_ext_ascii_frames(table_str):
     
     # Define the translation of basic ASCII to extended ASCII frame symbols
     translate = {
-    	# Left, right, above, below
+        # Left, right, above, below
         "---  ": '─',
         "===  ": '═',
         "  |||": '│',
@@ -91,7 +92,7 @@ def convert_to_ext_ascii_frames(table_str):
 
     return '\n'.join(lines_out)
 
-def gpudiff(gpu1, gpu2):
+def diff_device_query(gpu1, gpu2):
     # Extract device names or use 'N/A' if not available
     device_name1 = gpu1.get('Device Name', 'N/A')
     device_name2 = gpu2.get('Device Name', 'N/A')
@@ -130,26 +131,65 @@ def gpudiff(gpu1, gpu2):
     output = convert_to_ext_ascii_frames(output)
     
     print(unmask(output))
-    
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Compare two GPU device query logs.")
-    parser.add_argument("logfile1", help="Path to the first device query log file")
-    parser.add_argument("logfile2", help="Path to the second device query log file")
-    
+
+def plot_bandwidth(data, title, legend1, legend2):
+    transfer_sizes = list(data.keys())
+    bandwidths1 = [float(bw[0]) for bw in data.values()]
+    bandwidths2 = [float(bw[1]) for bw in data.values()]
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(transfer_sizes, bandwidths1, label=legend1, marker='o')
+    plt.plot(transfer_sizes, bandwidths2, label=legend2, marker='o')
+    plt.xlabel('Transfer Size (Bytes)')
+    plt.ylabel('Bandwidth (GB/s)')
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+def diff_bandwidth_test(gpu1, gpu2):
+    h2d = merge(gpu1['h2d'], gpu2['h2d'])
+    d2h = merge(gpu1['d2h'], gpu2['d2h'])
+    d2d = merge(gpu1['d2d'], gpu2['d2d'])
+
+    plot_bandwidth(h2d, 'Host to Device Bandwidth', gpu1['device_name'], gpu2['device_name'])
+    plot_bandwidth(d2h, 'Device to Host Bandwidth', gpu1['device_name'], gpu2['device_name'])
+    plot_bandwidth(d2d, 'Device to Device Bandwidth', gpu1['device_name'], gpu2['device_name'])
+
+def main():
+    parser = argparse.ArgumentParser(description="Compare two GPU logs.")
+    subparsers = parser.add_subparsers(dest='command', required=True)
+
+    # Subparser for device query
+    device_query_parser = subparsers.add_parser('device-query', help='Compare device query logs')
+    device_query_parser.add_argument('logfile1', help='Path to the first device query log file')
+    device_query_parser.add_argument('logfile2', help='Path to the second device query log file')
+
+    # Subparser for bandwidth test
+    bandwidth_test_parser = subparsers.add_parser('bandwidth-test', help='Compare bandwidth test logs')
+    bandwidth_test_parser.add_argument('logfile1', help='Path to the first bandwidth test log file')
+    bandwidth_test_parser.add_argument('logfile2', help='Path to the second bandwidth test log file')
+
     args = parser.parse_args()
-    
-    # Open the log file and read the entire log into a string
+
+    # Open the log files and read the entire logs into strings
     with open(args.logfile1, 'r') as file:
         log1 = file.read()
 
-    # Open the log file and read the entire log into a string
     with open(args.logfile2, 'r') as file:
         log2 = file.read()
 
-    # Parse the device query logs
-    gpu1 = parse_device_query(log1)
-    gpu2 = parse_device_query(log2)
+    if args.command == 'device-query':
+        gpu1 = parse_device_query(log1)
+        gpu2 = parse_device_query(log2)
+        diff_device_query(gpu1, gpu2)
+    elif args.command == 'bandwidth-test':
+        gpu1 = parse_bandwidth_test(log1)
+        gpu2 = parse_bandwidth_test(log2)
+        diff_bandwidth_test(gpu1, gpu2)
 
-    # Compare and display the differences
-    gpudiff(gpu1, gpu2)
+if __name__ == "__main__":
+    main()
 
