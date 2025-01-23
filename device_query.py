@@ -32,7 +32,7 @@ def extract_device_info(log):
                     num_smx = str(int(match.group(1)))
                     num_cores_per_smx = str(int(match.group(2)))
                     num_cores = str(int(match.group(3)))
-                    info['Total number of CUDA codes'] = num_cores
+                    info['Total number of CUDA cores'] = num_cores
                     info['Total number of CUDA multiprocessors'] = num_smx
                     info['Total number of CUDA cores per multiprocessor'] = num_cores_per_smx
                     continue
