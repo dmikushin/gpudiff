@@ -132,31 +132,41 @@ def diff_device_query(gpu1, gpu2):
     
     print(unmask(output))
 
-def plot_bandwidth(data, title, legend1, legend2):
+def plot_bandwidth(ax, data, title, legend1, legend2):
     transfer_sizes = list(data.keys())
     bandwidths1 = [float(bw[0]) for bw in data.values()]
     bandwidths2 = [float(bw[1]) for bw in data.values()]
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(transfer_sizes, bandwidths1, label=legend1, marker='o')
-    plt.plot(transfer_sizes, bandwidths2, label=legend2, marker='o')
-    plt.xlabel('Transfer Size (Bytes)')
-    plt.ylabel('Bandwidth (GB/s)')
-    plt.title(title)
-    plt.legend()
-    plt.grid(True)
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
+    ax.plot(transfer_sizes, bandwidths1, label=legend1, marker='o')
+    ax.plot(transfer_sizes, bandwidths2, label=legend2, marker='o')
+    ax.set_xlabel('Transfer Size (Bytes)')
+    ax.set_ylabel('Bandwidth (GB/s)')
+    ax.set_title(title)
+    ax.legend()
+    ax.grid(True)
+
+    # Set sparse ticks (adjust the divisor as needed)
+    tick_spacing = max(1, len(transfer_sizes) // 10)
+    ax.set_xticks(transfer_sizes[::tick_spacing])
+    ax.set_xticklabels(transfer_sizes[::tick_spacing], rotation=45)
 
 def diff_bandwidth_test(gpu1, gpu2):
     h2d = merge(gpu1['h2d'], gpu2['h2d'])
     d2h = merge(gpu1['d2h'], gpu2['d2h'])
     d2d = merge(gpu1['d2d'], gpu2['d2d'])
 
-    plot_bandwidth(h2d, 'Host to Device Bandwidth', gpu1['device_name'], gpu2['device_name'])
-    plot_bandwidth(d2h, 'Device to Host Bandwidth', gpu1['device_name'], gpu2['device_name'])
-    plot_bandwidth(d2d, 'Device to Device Bandwidth', gpu1['device_name'], gpu2['device_name'])
+    fig, axs = plt.subplots(2, 2, figsize=(18, 10))
+    fig.suptitle('GPU Memory Bandwidth Comparison')
+
+    plot_bandwidth(axs[0][0], h2d, 'Host to Device Bandwidth', gpu1['device_name'], gpu2['device_name'])
+    plot_bandwidth(axs[1][0], d2h, 'Device to Host Bandwidth', gpu1['device_name'], gpu2['device_name'])
+    plot_bandwidth(axs[0][1], d2d, 'Device to Device Bandwidth', gpu1['device_name'], gpu2['device_name'])
+
+    # Hide the unused subplot at position (1,1)
+    axs[1][1].axis('off')
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.show()
 
 def main():
     parser = argparse.ArgumentParser(description="Compare two GPU logs.")
