@@ -5,7 +5,9 @@ from device_query import parse_device_query
 from bandwidth_test import parse_bandwidth_test
 from dashtable import data2rst
 from collections import OrderedDict
-import matplotlib.pyplot as plt
+import dash
+from dash import dcc, html
+import plotly.graph_objs as go
 
 def merge(dict1: OrderedDict, dict2: OrderedDict):
     """Merge values of two OrderedDicts into tuples with the same key, using 'N/A' for missing keys."""
@@ -137,26 +139,34 @@ def plot_bandwidth(data, title, legend1, legend2):
     bandwidths1 = [float(bw[0]) for bw in data.values()]
     bandwidths2 = [float(bw[1]) for bw in data.values()]
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(transfer_sizes, bandwidths1, label=legend1, marker='o')
-    plt.plot(transfer_sizes, bandwidths2, label=legend2, marker='o')
-    plt.xlabel('Transfer Size (Bytes)')
-    plt.ylabel('Bandwidth (GB/s)')
-    plt.title(title)
-    plt.legend()
-    plt.grid(True)
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
+    return go.Figure(
+        data=[
+            go.Scatter(x=transfer_sizes, y=bandwidths1, mode='lines+markers', name=legend1),
+            go.Scatter(x=transfer_sizes, y=bandwidths2, mode='lines+markers', name=legend2)
+        ],
+        layout=go.Layout(
+            title=title,
+            xaxis=dict(title='Transfer Size (Bytes)'),
+            yaxis=dict(title='Bandwidth (GB/s)'),
+            legend=dict(x=0, y=1),
+            margin=dict(l=40, r=0, t=40, b=30)
+        )
+    )
 
 def diff_bandwidth_test(gpu1, gpu2):
     h2d = merge(gpu1['h2d'], gpu2['h2d'])
     d2h = merge(gpu1['d2h'], gpu2['d2h'])
     d2d = merge(gpu1['d2d'], gpu2['d2d'])
 
-    plot_bandwidth(h2d, 'Host to Device Bandwidth', gpu1['device_name'], gpu2['device_name'])
-    plot_bandwidth(d2h, 'Device to Host Bandwidth', gpu1['device_name'], gpu2['device_name'])
-    plot_bandwidth(d2d, 'Device to Device Bandwidth', gpu1['device_name'], gpu2['device_name'])
+    app = dash.Dash(__name__)
+
+    app.layout = html.Div([
+        dcc.Graph(figure=plot_bandwidth(h2d, 'Host to Device Bandwidth', gpu1['device_name'], gpu2['device_name'])),
+        dcc.Graph(figure=plot_bandwidth(d2h, 'Device to Host Bandwidth', gpu1['device_name'], gpu2['device_name'])),
+        dcc.Graph(figure=plot_bandwidth(d2d, 'Device to Device Bandwidth', gpu1['device_name'], gpu2['device_name']))
+    ])
+
+    app.run_server(debug=True)
 
 def main():
     parser = argparse.ArgumentParser(description="Compare two GPU logs.")
